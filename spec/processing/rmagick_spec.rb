@@ -231,7 +231,7 @@ describe CarrierWave::RMagick do
       end
 
       it "should fail to process a non image file" do
-        lambda {@instance.resize_to_limit(200, 200)}.should raise_exception(CarrierWave::ProcessingError, /^Failed to manipulate with rmagick, maybe it is not an image\? Original Error:/)
+        lambda {@instance.resize_to_limit(200, 200)}.should raise_exception(CarrierWave::ProcessingError, /^Failed to manipulate with rmagick, maybe it is not an image\?/)
       end
 
       it "should use I18n" do
