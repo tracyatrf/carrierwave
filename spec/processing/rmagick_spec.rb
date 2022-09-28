@@ -184,9 +184,41 @@ describe CarrierWave::RMagick do
       ::Magick::Image::Info.any_instance.should_receive(:size=).with("200x200")
       
       @instance.manipulate! :read => {
-          :density => 10,
-          :size => %{"200x200"}
+        :density => 10,
+        :size => "200x200"
+      }
+    end
+
+    it 'shows deprecation but still accepts strings enclosed with double quotes' do
+      ::Magick::Image::Info.any_instance.should_receive(:size=).once.with("200x200")
+      ActiveSupport::Deprecation.should_receive(:warn).with(any_args)
+      @instance.manipulate! :read => {:size => %{"200x200"}}
+    end
+
+    it 'shows deprecation but still accepts strings enclosed with single quotes' do
+      ::Magick::Image::Info.any_instance.should_receive(:size=).once.with("200x200")
+      ActiveSupport::Deprecation.should_receive(:warn).with(any_args)
+      @instance.manipulate! :read => {:size => %{'200x200'}}
+    end
+
+    it 'does not allow arbitrary code execution' do
+      ::Kernel.should_not_receive(:puts)
+      expect do
+        @instance.manipulate! :read => {
+          :density => "1 }; raise; {"
         }
+      end.to raise_error ArgumentError, /invalid density geometry/
+    end
+
+    it 'does not allow invocation of non-public methods' do
+      module Kernel
+        private def foo=(value); raise; end
+      end
+      expect do
+        @instance.manipulate! :read => {
+            :foo => "1"
+        }
+      end.to raise_error NoMethodError, /private method `foo=' called/
     end
   end
 
@@ -216,7 +248,7 @@ describe CarrierWave::RMagick do
         change_locale_and_store_translations(:foo, {}) do
           lambda do
             @instance.resize_to_limit(200, 200)
-          end.should raise_exception( CarrierWave::ProcessingError, /Not a JPEG/ )
+          end.should raise_exception(CarrierWave::ProcessingError)
         end
       end
     end
